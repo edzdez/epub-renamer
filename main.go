@@ -88,7 +88,7 @@ func run(file string, outputDirectory string, result chan bool) {
 
 		data, err = readEpubData(f)
 		if err != nil {
-            log.Print(file + ": " + err.Error())
+			log.Print(file + ": " + err.Error())
 			result <- false
 			return
 		}
@@ -162,11 +162,18 @@ func main() {
 		results[file] = value
 	}
 
+	succeeded := 0
+	failed := 0
 	for file, result := range results {
-        if result {
-            color.Green("%s: ✅", file)
-        } else {
-            color.Red("%s: ❌", file)
-        }
+		if result {
+			succeeded += 1
+			color.Green("%s: ✅", file)
+		} else {
+			failed += 1
+			color.Red("%s: ❌", file)
+		}
 	}
+
+	fmt.Println("succeeded:", succeeded)
+	fmt.Println("failed:", failed)
 }
