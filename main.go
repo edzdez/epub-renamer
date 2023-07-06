@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/gabriel-vasile/mimetype"
 )
 
@@ -87,7 +88,7 @@ func run(file string, outputDirectory string, result chan bool) {
 
 		data, err = readEpubData(f)
 		if err != nil {
-			log.Print(err.Error())
+            log.Print(file + ": " + err.Error())
 			result <- false
 			return
 		}
@@ -138,18 +139,18 @@ func isDirectory(path string) (bool, error) {
 func main() {
 	if len(os.Args) < 3 {
 		fmt.Println("usage:", os.Args[0], "<output_directory> <files> ...")
-        os.Exit(1)
+		os.Exit(1)
 	}
 
 	outputDirectory := os.Args[1]
 	isDir, err := isDirectory(outputDirectory)
 	if err != nil {
 		log.Print(err.Error())
-        os.Exit(1)
+		os.Exit(1)
 	} else if !isDir {
-        log.Print(os.Args[1] + " is not a directory!")
-        os.Exit(1)
-    }
+		log.Print(os.Args[1] + " is not a directory!")
+		os.Exit(1)
+	}
 
 	files := os.Args[2:]
 	results := map[string]bool{}
@@ -162,6 +163,10 @@ func main() {
 	}
 
 	for file, result := range results {
-		fmt.Println(file, ": ", result)
+        if result {
+            color.Green("%s: ✅", file)
+        } else {
+            color.Red("%s: ❌", file)
+        }
 	}
 }
