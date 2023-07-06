@@ -3,7 +3,6 @@ package main
 import (
 	"archive/zip"
 	"encoding/xml"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -124,27 +123,45 @@ func run(file string, outputDirectory string, result chan bool) {
 		return
 	}
 
-    result <- true
+	result <- true
+}
+
+func isDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.IsDir(), nil
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Panic("expected file argument")
+	if len(os.Args) < 3 {
+		fmt.Println("usage:", os.Args[0], "<output_directory> <files> ...")
+        os.Exit(1)
 	}
 
-	outputDirectory := flag.String("output", ".", "output directory for epub-renamer")
+	outputDirectory := os.Args[1]
+	isDir, err := isDirectory(outputDirectory)
+	if err != nil {
+		log.Print(err.Error())
+        os.Exit(1)
+	} else if !isDir {
+        log.Print(os.Args[1] + " is not a directory!")
+        os.Exit(1)
+    }
 
-	files := os.Args[1:]
+	files := os.Args[2:]
 	results := map[string]bool{}
 	for _, file := range files {
 		result := make(chan bool)
-		go run(file, *outputDirectory, result)
+		go run(file, outputDirectory, result)
 
-        value := <- result
+		value := <-result
 		results[file] = value
 	}
 
 	for file, result := range results {
-        fmt.Println(file, ": ", result)
+		fmt.Println(file, ": ", result)
 	}
 }
