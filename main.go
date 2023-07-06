@@ -22,7 +22,7 @@ type BookData struct {
 type EpubMetadataParseError struct{}
 
 func (e *EpubMetadataParseError) Error() string {
-	return "failed to find content.opf"
+	return "failed to find epub opf"
 }
 
 func parseContentOPF(rc io.ReadCloser) (BookData, error) {
@@ -41,7 +41,7 @@ func parseContentOPF(rc io.ReadCloser) (BookData, error) {
 
 func readEpubData(f *zip.ReadCloser) (BookData, error) {
 	for _, file := range f.File {
-		if strings.HasSuffix(file.Name, "content.opf") {
+		if strings.HasSuffix(file.Name, ".opf") {
 			rc, err := file.Open()
 			if err != nil {
 				return BookData{}, err
