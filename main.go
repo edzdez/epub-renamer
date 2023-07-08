@@ -62,17 +62,26 @@ func sanitizeData(data *BookData) string {
 	return title + "-" + author + ".epub"
 }
 
-func run(file string, outputDirectory string, result chan bool) {
+func run(file string, outputDirectory string, result chan struct {
+	string
+	bool
+}) {
 	mtype, err := mimetype.DetectFile(file)
 	if err != nil {
 		log.Print(err.Error())
-		result <- false
+		result <- struct {
+			string
+			bool
+		}{file, false}
 		return
 	}
 
 	if mtype.String() != "application/epub+zip" {
 		log.Print(file + ": not an epub file")
-		result <- false
+		result <- struct {
+			string
+			bool
+		}{file, false}
 		return
 	}
 
@@ -81,7 +90,10 @@ func run(file string, outputDirectory string, result chan bool) {
 		f, err := zip.OpenReader(file)
 		if err != nil {
 			log.Print(err.Error())
-			result <- false
+			result <- struct {
+				string
+				bool
+			}{file, false}
 			return
 		}
 		defer f.Close()
@@ -89,7 +101,10 @@ func run(file string, outputDirectory string, result chan bool) {
 		data, err = readEpubData(f)
 		if err != nil {
 			log.Print(file + ": " + err.Error())
-			result <- false
+			result <- struct {
+				string
+				bool
+			}{file, false}
 			return
 		}
 	}
@@ -97,14 +112,20 @@ func run(file string, outputDirectory string, result chan bool) {
 	filename := sanitizeData(&data)
 	if filename == "" {
 		log.Print("empty output filename... aborting")
-		result <- false
+		result <- struct {
+			string
+			bool
+		}{file, false}
 		return
 	}
 
 	fout, err := os.Create(outputDirectory + "/" + filename)
 	if err != nil {
 		log.Print(err.Error())
-		result <- false
+		result <- struct {
+			string
+			bool
+		}{file, false}
 		return
 	}
 	defer fout.Close()
@@ -112,7 +133,10 @@ func run(file string, outputDirectory string, result chan bool) {
 	fin, err := os.Open(file)
 	if err != nil {
 		log.Print(err.Error())
-		result <- false
+		result <- struct {
+			string
+			bool
+		}{file, false}
 		return
 	}
 	defer fin.Close()
@@ -120,11 +144,17 @@ func run(file string, outputDirectory string, result chan bool) {
 	_, err = io.Copy(fout, fin)
 	if err != nil {
 		log.Print(err.Error())
-		result <- false
+		result <- struct {
+			string
+			bool
+		}{file, false}
 		return
 	}
 
-	result <- true
+	result <- struct {
+		string
+		bool
+	}{file, true}
 }
 
 func isDirectory(path string) (bool, error) {
@@ -154,12 +184,18 @@ func main() {
 
 	files := os.Args[2:]
 	results := map[string]bool{}
-	for _, file := range files {
-		result := make(chan bool)
-		go run(file, outputDirectory, result)
+	resultsChan := make(chan struct {
+		string
+		bool
+	})
 
-		value := <-result
-		results[file] = value
+	for _, file := range files {
+		go run(file, outputDirectory, resultsChan)
+	}
+
+	for i := 0; i < len(files); i++ {
+		result := <-resultsChan
+		results[result.string] = result.bool
 	}
 
 	succeeded := 0
