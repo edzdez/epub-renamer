@@ -76,7 +76,8 @@ func run(file string, outputDirectory string, result chan struct {
 		return
 	}
 
-	if mtype.String() != "application/epub+zip" {
+    fmt.Println(mtype.String());
+	if mtype.String() != "application/epub+zip" && mtype.String() != "application/zip" {
 		log.Print(file + ": not an epub file")
 		result <- struct {
 			string
